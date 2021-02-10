@@ -1,0 +1,19 @@
+Gene expression data 
+Moli uses a multi-omics integration method on DNN. Input: Somatic mutation, copy number, gene expression
+->drug response prediction
+
+triplet loss: Unlike t-SNE which preserves embedding orders via probability distributions, it works directly on embedded distances
+It is a loss function for ML where a baseline input is compared to positive input, and negative input.
+thought vector: vector on NL
+A: Anchor input   P: positive input of same class    N: Negative input of different class from A
+L(A,P,N)=max(|f(A)-f(P)|^2-|f(A)-f(N)|^2+a,0)    and optimize it
+
+AUROC: evaluate classifier's performances
+-expectation that a uniformly drawn random positive is ranked before a uniformly drawn random negative
+the expected proportion of positives ranked before a uniformly drawn random negative
+AUC: Area under the curve ->AUROC: Area under the curve of the receiver operating characteristic
+
+Reactome: curated databse of pathways and reactions in human biology. pathway: 'steps'
+Pathway hierarchically. 
+
+Somatic mutation: chang ein the DNA sequence of somatic cell(biological cell forming body of organism)
