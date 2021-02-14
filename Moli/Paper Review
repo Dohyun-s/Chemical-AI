@@ -1,0 +1,71 @@
+Gene expression data 
+Moli uses a multi-omics integration method on DNN. Input: Somatic mutation, copy number, gene expression
+->drug response prediction
+
+triplet loss: Unlike t-SNE which preserves embedding orders via probability distributions, it works directly on embedded distances
+It is a loss function for ML where a baseline input is compared to positive input, and negative input.
+thought vector: vector on NL
+A: Anchor input   P: positive input of same class    N: Negative input of different class from A
+L(A,P,N)=max(|f(A)-f(P)|^2-|f(A)-f(N)|^2+a,0)    and optimize it
+
+AUROC: evaluate classifier's performances
+-expectation that a uniformly drawn random positive is ranked before a uniformly drawn random negative
+the expected proportion of positives ranked before a uniformly drawn random negative
+AUC: Area under the curve ->AUROC: Area under the curve of the receiver operating characteristic
+
+Reactome: curated databse of pathways and reactions in human biology. pathway: 'steps'
+Pathway hierarchically. 
+
+
+Somatic mutation: change in the DNA sequence of somatic cell(biological cell forming body of organism)
+-------------------------------------------------------------------------------------------------------------------------
+
+Moli( multi omics late integration methods on DNN) 
+input: somatic mutation, CNA, Gene expression data 
+output: response to given drug
+-optimize representation via combined cost function with triplet loss function and binary cross-entropy loss function
+
+IC50: concentration of drug that is required for 50% inhibition in vitro(최대 억제 농도의 절반, 특정 생물학적 생화학적 기능을 억제하는 물질 효능 측정)
+
+in vitro(체외): PCX in vivo(체내): TCGA patitents- > 5 chemotherapy agents, 2 targeted therapeutics
+
+MOLI: sub-networks, has multiple feed forward encoding sub-networks, one for each input omics data type
+
+Mutation: X_M, CNA: X_E, Gene-expression data:X_C    ->  concatenate the feature
+Last sub network: classfication layer with signmoid activation f, using dropout and weight decay for regularization
+g(.)
+cost function: cross-entropy classification loss   where Y_N*1 : binarized IC50 for measure
+and add triplet loss (first introduced in FaceNet: learned features is correlated with similarity among faces)
+
+(Anchor, Positive,Negative) =(responder cell lines to given anti-cancer drug, "", non responder to drug)
+Condition: d(F(Anchori),F(Positivei))≤d(F(Anchori),F(Negativei))⁠ 
+d is Euclidean Distance
+d(F(Anchori),F(Positivei))−d(F(Anchori),F(Negativei))+ξ≤0.    with margin
+
+Offline Selection: triplets based on value of labels  
+Online Selection: triplets from samples in each mini-batch 
+We adopt online selection
+triplets based on possible combination of input sample (soft selection)/ mini batches or based only on those triplets with high triplet loss value (hard selection)
+We adopt soft selection
+
+ J=LClassifier+γLTriplet,  γ is a regularization term
+ -------------------------------------------------------------------------------------------------------------------------------------------
+ For targeted drugs, transfer-learning and train MOLI    , we evaluate transfer learning for EGFR pathway inhibitors due to availability of external validation daat a
+ Predict drug response for TCGA patients: Since drug target EGFR pathway , expect it to be strongly correlated with predicted drug response
+ compare list of genes in EGFR pathway from REACTOME and level of expression 
+ the obtainn p-values
+ 
+ Gene expression profiles: ArrayExpress for GDSC dataset were RMA(robust multichip average)-normalized
+ Homogenization(균질화) 
+ Question:
+ 1. Does MOLI outperform single-omics and early integration baselines
+ 2. Does transfer learning work for targeted drugs,  does MOLI trained on pan-drug data outperform MOLI trained on drug-specific (single drug) data?
+ 3. Does the predicted response by MOLI have associations with the target of that drug?
+ 
+ They screen on Docetaxel, Cisplatin, Gemcitabine, Paclitaxel, Erlotinib, Cetuximab 
+ Docetaxel:                           Cisplatin 
+ Neutrophil: 포유류에게 가장 많은 백혈구    Haematological: 혈액학   C-difficile bacteria: infect the bowel and cause diarrhoea.
+ Adagrad: optimizing parameters in DNN , Pytorch framework 
+ 
+ -----------------------------
+ loss function from Siamese neural network
