@@ -1,0 +1,6 @@
+response.tar.gz ->response 파일들
+SNA_binary.tar.gz-> _mutations 자료들
+Multi-OMICS.cohorts.tsv-> 약물에 대한 위치 자료들
+exprs_homogenized.tar.gz-> _exprs 자료들
+EGFR experiments data.tar.gz -> EGFRO, PDX tsv
+CNA_binary: CNA파일 (copy number alteration
