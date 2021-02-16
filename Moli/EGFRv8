@@ -77,6 +77,7 @@ for drug in drugs:
     c.rename(lambda x: str(x)+"_"+drug, axis="index",inplace=True)
     m.rename(lambda x: str(x)+"_"+drug, axis="index",inplace=True)
     expression_zscores.append(e_z)
+ 
     CNA.append(c)                   #CNA 추가        
     mutations.append(m)             #mutation 추가
     
@@ -104,3 +105,104 @@ rate1 = 0.5
 rate2 = 0.8
 rate3 = 0.5
 rate4 = 0.3
+
+scalerGDSC=sk.StandardScaler()
+scalerGDSC.fit(GDSCEv2.values)
+X_trainE=scalerGDSC.transform(GDSCEv2.values)
+X_testEerlo=scalerGDSC.transform(PDXEerlo.values)
+X_testEcet=scalerGDSC.transform(PDXEcet.values)
+
+X_trainM=np.nan_to_num(GDSCMv2.values)
+X_trainC=np.nan_to_num(GDSCCv2.values)
+X_testMerlo = np.nan_to_num(PDXMerlo.values)
+X_testCerlo = np.nan_to_num(PDXCerlo.values)
+X_testMcet = np.nan_to_num(PDXMcet.values)
+X_testCcet = np.nan_to_num(PDXCcet.values)
+
+TX_testEerlo = torch.FloatTensor(X_testEerlo)
+TX_testMerlo = torch.FloatTensor(X_testMerlo)
+TX_testCerlo = torch.FloatTensor(X_testCerlo)
+ty_testEerlo = torch.FloatTensor(Ytserlo.astype(int))
+
+TX_testEcet = torch.FloatTensor(X_testEcet)
+TX_testMcet = torch.FloatTensor(X_testMcet)
+TX_testCcet = torch.FloatTensor(X_testCcet)
+ty_testEcet = torch.FloatTensor(Ytscet.astype(int))
+
+n_sampE, IE_dim=X_trainE.shape
+n_sampM, IM_dim = X_trainM.shape
+n_sampC, IC_dim = X_trainC.shape
+
+h_dim1 = hdm1
+h_dim2 = hdm2
+h_dim3 = hdm3        
+Z_in = h_dim1 + h_dim2 + h_dim3
+
+costtr=[]
+auctr=[]
+costts=[]
+aucts=[]
+
+class AEE(nn.Module):
+    def __init__(self):
+        super(AEE, self).__init__()
+        self.EnE=torch.nn.Sequential(
+            nn.Linear(IE_dim, h_dim1), #X_trainE.shape column, 32
+            nn.BatchNorm1d(h_dim1),
+            nn.RELU(),
+            nn.Dropout(rate1) #0.5
+        )
+    def forward(self,x):
+        output=self.EnE(x)
+        return output
+
+class AEM(nn.Module):
+    def __init__(self):
+        super(AEM,self).__init__()
+        self.EnM=torch.nn.Sequential(
+            nn.Linear(IM_dim, h_dim2) #X_trainM.shape column, 16
+            nn.BatchNorm1d(h_dim2),
+            nn.ReLU(),
+            nn.Dropout(rate2) #0.8
+        )
+    def forward(self,x):
+        output=self.EnM(x)
+        return output
+
+class AEC(nn.Module):
+    def __init__(self):
+        super(AEC,self).__init__()
+        self.EnC=torch.nn.Sequential(
+            nn.Linear(IM_dim, h_dim3) #X_trainM.shape column,256
+            nn.BatchNorm1d(h_dim3)
+            nn.RELU(),
+            nn.Dropout(rate3)
+        )
+    def forward(self,x):
+        output=self.EnC(x)
+        return output
+    
+class Classifier(nn.Module):
+    def __init__(self):
+        super(Classifier, self).__init__()
+        self.FC=torch.nn.Sequential(
+            nn.Linear(Z_in,1),   #Z_in=h_dim1 + h_dim2 + h_dim3
+            nn.Dropout(rate4),
+            nn.Sigmoid()
+        )
+    def forward(self,x):
+        return self.FC(x)
+torch.cuda.manual_seed_all(42)
+
+AutoencoderE = torch.load('EGFRv2Exprs.pt')
+AutoencoderM = torch.load('EGFRv2Mut.pt')
+AutoencoderC = torch.load('EGFRv2CNA.pt')
+AutoencoderE.eval()
+AutoencoderM.eval()
+AutoencoderC.eval()
+Clas.eval()
+
+ZEX=AutoencoderE(torch.FloatTensor(X_trainE))
+ZMX = AutoencoderM(torch.FloatTensor(X_trainM))
+ZCX = AutoencoderC(torch.FloatTensor(X_trainC))
+
