@@ -1,0 +1,106 @@
+GDSCE = pd.read_csv("GDSC_exprs.z.EGFRi.tsv", 
+GDSCM = pd.read_csv("GDSC_mutations.EGFRi.tsv",
+GDSCC = pd.read_csv("GDSC_CNA.EGFRi.tsv", 
+PDXEerlo = pd.read_csv("PDX_exprs.Erlotinib.eb_with.GDSC_exprs.Erlotinib.tsv", 
+PDXMerlo = pd.read_csv("PDX_mutations.Erlotinib - Copy.tsv", 
+PDXCerlo = pd.read_csv("PDX_CNV.Erlotinib.tsv", 
+PDXEcet = pd.read_csv("PDX_exprs.Cetuximab.eb_with.GDSC_exprs.Cetuximab.tsv", 
+PDXMcet = pd.read_csv("PDX_mutations.Cetuximab - Copy.tsv", 
+PDXCcet = pd.read_csv("PDX_CNV.Cetuximab.tsv",
+GDSCR = pd.read_csv("GDSC_response.EGFRi.tsv",
+PDXRcet = pd.read_csv("PDX_response.Cetuximab.tsv", 
+PDXRerlo = pd.read_csv("PDX_response.Erlotinib.tsv", 
+                       
+                     
+PDXRcet.loc[PDXRcet.iloc[:,1] == 'R'] = 0
+PDXRcet.loc[PDXRcet.iloc[:,1] == 'S'] = 1
+PDXRerlo.loc[PDXRerlo.iloc[:,1] == 'R'] = 0
+PDXRerlo.loc[PDXRerlo.iloc[:,1] == 'S'] = 1
+
+
+selector = VarianceThreshold(0.05)         #Feature selector that removes all low-variance features.
+selector.fit_transform(GDSCE)
+GDSCE = GDSCE[GDSCE.columns[selector.get_support(indices=True)]]     #.get_support: Get a mask, or integer index, of the features selected
+
+GDSCM = GDSCM.fillna(0)
+GDSCM[GDSCM != 0.0] = 1
+GDSCC = GDSCC.fillna(0)
+GDSCC[GDSCC != 0.0] = 1         #전처리
+
+ls = GDSCE.columns.intersection(GDSCM.columns)
+ls = ls.intersection(GDSCC.columns)
+ls = ls.intersection(PDXEerlo.columns)
+ls = ls.intersection(PDXMerlo.columns)
+ls = ls.intersection(PDXCerlo.columns)
+ls = ls.intersection(PDXEcet.columns)
+ls = ls.intersection(PDXMcet.columns)
+ls = ls.intersection(PDXCcet.columns)       #ls: platform의 intersection 값  column세로
+ls = pd.unique(ls)      #unique한 column 추출
+
+ls2 = GDSCE.index.intersection(GDSCM.index)
+ls2 = ls2.intersection(GDSCC.index)   #ls2: GDXCE, GDSCC랑 intersection index
+
+ls3 = PDXEerlo.index.intersection(PDXMerlo.index)
+ls3 = ls3.intersection(PDXCerlo.index)  #ls3: PDXMerlo랑 PDXCerlo의 index interaction
+
+ls4 = PDXEcet.index.intersection(PDXMcet.index)
+ls4 = ls4.intersection(PDXCcet.index)   #ls4: PDXMcet, PDXCcet의 index interaction  index가로
+
+PDXEerlo = PDXEerlo.loc[ls3,ls]
+PDXMerlo = PDXMerlo.loc[ls3,ls]
+PDXCerlo = PDXCerlo.loc[ls3,ls]
+PDXEcet = PDXEcet.loc[ls4,ls]
+PDXMcet = PDXMcet.loc[ls4,ls]
+PDXCcet = PDXCcet.loc[ls4,ls]
+GDSCE = GDSCE.loc[:,ls]
+GDSCM = GDSCM.loc[:,ls]
+GDSCC = GDSCC.loc[:,ls]
+
+d = {"R":0,"S":1}
+GDSCR["response"] = GDSCR.loc[:,"response"].apply(lambda x: d[x])     #response 값을 R이면 0 , S이면 1로 바꿈
+
+responses = GDSCR
+drugs = set(responses["drug"].values)
+exprs_z = GDSCE
+cna = GDSCC
+mut = GDSCM
+expression_zscores = []
+CNA=[]
+mutations = []
+
+for drug in drugs:
+    samples = responses.loc[responses["drug"]==drug,:].index.values
+    e_z=exprs_z.loc[samples,:]
+    c=cna.loc[samples,:]
+    m=mut.loc[samples,:]
+    e_z.rename(lamda x: str(x)+"_"+drug, axis="index",inplace=True)
+    c.rename(lambda x: str(x)+"_"+drug, axis="index",inplace=True)
+    m.rename(lambda x: str(x)+"_"+drug, axis="index",inplace=True)
+    expression_zscores.append(e_z)
+    CNA.append(c)                   #CNA 추가        
+    mutations.append(m)             #mutation 추가
+    
+responses.index=responses.index.values+"_"+responses["drug"].values
+GDSCEv2=pd.concat(expression_zscores, axis=0)
+GDSCCv2=pd.concat(CNA, axis=0)
+GDSCMv2=pd.concat(mutation, axis=0)
+GDSCRv2=responses
+
+ls2=GDSCEv2.index.intersection(GDSCMv2.index)       #GDSCEv2랑 GDSCMv2의 index 합침
+ls2 = ls2.intersection(GDSCCv2.index)
+GDSCEv2 = GDSCEv2.loc[ls2,:]
+GDSCMv2 = GDSCMv2.loc[ls2,:]
+GDSCCv2 = GDSCCv2.loc[ls2,:]
+GDSCRv2 = GDSCRv2.loc[ls2,:]
+
+Y = GDSCRv2['response'].values 
+Ytscet = PDXRcet['response'].values   #PDXRcet value들
+PDXRerlo = PDXRerlo.loc[ls3,:]  
+Ytserlo = PDXRerlo['response'].values  
+hdm1 = 32
+hdm2 = 16
+hdm3 = 256
+rate1 = 0.5
+rate2 = 0.8
+rate3 = 0.5
+rate4 = 0.3
